@@ -30,7 +30,7 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* دعم الساعات الدائرية - تحسين الهوامش */
+        /* --- تحسينات الساعات الدائرية --- */
         @media (max-width: 450px) {
             .round-watch-safe {
                 padding-left: max(16px, env(safe-area-inset-left));
@@ -38,9 +38,20 @@
             }
             
             /* توسيع مساحة القراءة في الوسط للساعات الدائرية */
-            .reader-content {
-                padding-left: 10px;
-                padding-right: 10px;
+            @supports (border-radius: 50%) {
+                .reader-content {
+                    padding-left: 14px !important;
+                    padding-right: 14px !important;
+                }
+                /* جعل عناصر القائمة في الوسط للساعة */
+                .watch-list-item {
+                    text-align: center !important;
+                    justify-content: center !important;
+                }
+                /* إخفاء المعلومات الجانبية في القائمة للساعة */
+                .hide-on-watch {
+                    display: none !important;
+                }
             }
         }
 
@@ -50,7 +61,7 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin: 0 5px; 
+            margin: 0 6px; 
             vertical-align: middle;
             height: 1em;
             width: 1em;
@@ -71,16 +82,34 @@
             padding-top: 2px;
         }
 
-        /* مؤشر آخر موضع قراءة */
+        /* آخر موضع قراءة */
         .last-position-indicator {
             position: absolute;
-            right: -6px;
+            right: -8px;
             top: 50%;
             transform: translateY(-50%);
             width: 4px;
-            height: 80%;
+            height: 100%;
             border-radius: 2px;
-            opacity: 0.8;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* القائمة المنبثقة */
+        .surah-list-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            animation: slideUp 0.25s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
         }
 
         /* تحسين أزرار التنقل */
@@ -89,10 +118,10 @@
             border-radius: 14px;
             font-weight: bold;
             font-size: 16px;
-            transition: opacity 0.2s;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        .nav-btn:active { opacity: 0.7; }
+        .nav-btn:active { transform: scale(0.96); }
         .nav-btn:disabled { opacity: 0.3; pointer-events: none; }
     </style>
 </head>
@@ -109,15 +138,15 @@
         function App() {
             const [surahs, setSurahs] = React.useState([]);
             const [currentSurah, setCurrentSurah] = React.useState(null);
-            // view: 'list' (القائمة), 'reader' (القراءة), 'settings' (الإعدادات)
             const [view, setView] = React.useState('loading');
-            
+            const [showList, setShowList] = React.useState(false);
             const [fontSize, setFontSize] = React.useState(() => parseInt(localStorage.getItem('q_fs')) || 24);
             const [darkMode, setDarkMode] = React.useState(() => localStorage.getItem('q_dm') === 'true');
             const [selectedAyah, setSelectedAyah] = React.useState(null);
             const [lastSavedPosition, setLastSavedPosition] = React.useState(null);
             const saveTimerRef = React.useRef(null);
             
+            // اكتشاف الساعة لضبط التنسيق
             const isWatch = window.innerWidth <= 450;
 
             // حفظ تلقائي
@@ -141,7 +170,6 @@
                     if (saved) {
                         loadSurah(saved.surah, saved.ayah);
                     } else {
-                        // مستخدم جديد -> الفاتحة
                         loadSurah(1); 
                     }
                     
@@ -150,7 +178,7 @@
                         const data = await res.json();
                         setSurahs(data.data);
                     } catch(e) {
-                        console.error('فشل تحميل القائمة');
+                        console.error('Failed to load surahs list');
                     }
                 };
                 init();
@@ -161,11 +189,12 @@
 
             const loadSurah = async (num, ayahNum = null) => {
                 setView('loading');
+                setShowList(false); // إغلاق القائمة عند الاختيار
                 try {
                     const res = await fetch(`https://api.alquran.cloud/v1/surah/${num}/quran-uthmani`);
                     const data = await res.json();
                     setCurrentSurah(data.data);
-                    setView('reader'); // الانتقال للقراءة فوراً
+                    setView('reader');
                     
                     if (ayahNum) {
                         setTimeout(() => {
@@ -179,13 +208,14 @@
                         setSelectedAyah(null);
                     }
                 } catch (e) {
-                    setView('list'); // في حال الخطأ عد للقائمة
+                    setView('reader');
+                    setShowList(true); // إظهار القائمة عند الخطأ
                 }
             };
 
             const colors = darkMode ? 
-                { bg: '#000000', text: '#e0e0e0', headerBg: '#111', border: '#333', accent: '#fbbf24', secondary: '#1f2937' } : 
-                { bg: '#fdfbf7', text: '#000000', headerBg: '#fff', border: '#e5e5e5', accent: '#d97706', secondary: '#f3f4f6' };
+                { bg: '#000000', text: '#e0e0e0', headerBg: '#111', border: '#333', accent: '#fbbf24' } : 
+                { bg: '#fdfbf7', text: '#000000', headerBg: '#fff', border: '#e5e5e5', accent: '#d97706' };
 
             if (view === 'loading') return (
                 <div style={{background: colors.bg, color: colors.text}} className="h-full flex items-center justify-center font-ui text-xl font-bold">
@@ -196,151 +226,151 @@
             return (
                 <div style={{background: colors.bg, color: colors.text}} className="h-full flex flex-col font-ui">
                     
-                    {/* --- الشريط العلوي (الزر الرئيسي) --- */}
+                    {/* الشريط العلوي - ضغط عليه يفتح القائمة */}
                     <div 
-                        onClick={() => setView('list')} /* ضغط أي مكان يعود للقائمة */
+                        onClick={() => setShowList(true)}
                         style={{backgroundColor: colors.headerBg, borderBottom: `1px solid ${colors.border}`}} 
-                        className="flex items-center justify-center p-2 shrink-0 h-14 relative z-20 active:opacity-60 transition-opacity cursor-pointer shadow-sm"
+                        className="flex items-center justify-center p-3 shrink-0 h-14 relative z-20 active:opacity-70 transition-opacity round-watch-safe cursor-pointer select-none"
                     >
-                        {/* العنوان */}
-                        <div className="font-bold text-xl truncate px-8 text-center w-full select-none font-quran">
-                            {view === 'list' ? 'فهرس السور' : currentSurah?.name || 'نور القرآن'}
+                        <div className="font-bold text-lg truncate px-2 text-center w-full">
+                            {currentSurah?.name || 'نور القرآن'}
                         </div>
 
-                        {/* أيقونة القائمة (همبرغر) تظهر دائماً لتوضيح أن هذا زر */}
-                        <div className="absolute left-4 opacity-60">
-                            {view === 'list' ? 
-                                <span className="text-sm font-bold opacity-0"></span> : /* نخفيها في القائمة */
-                                <Icon d="M4 6h16M4 12h16M4 18h16" size={24} />
-                            }
+                        <div className="absolute left-4 opacity-50">
+                            <Icon d="M4 6h16M4 12h16M4 18h16" size={22} />
                         </div>
                     </div>
 
-                    {/* --- منطقة المحتوى --- */}
-                    <div className="flex-1 overflow-y-auto no-scrollbar relative w-full">
-                        
-                        {/* 1. واجهة القائمة */}
-                        {view === 'list' && (
-                            <div className="pb-10 w-full">
-                                {/* زر الإعدادات في رأس القائمة */}
-                                <button 
-                                    onClick={(e) => { e.stopPropagation(); setView('settings'); }}
-                                    className="w-full p-4 border-b text-lg font-bold flex justify-between items-center round-watch-safe"
-                                    style={{borderColor: colors.border, color: colors.text, backgroundColor: colors.secondary}}
-                                >
-                                    <span className="flex items-center gap-3">
-                                        <Icon d="M12 15a3 3 0 100-6 3 3 0 000 6z" size={22} />
-                                        الإعدادات والوضع الليلي
-                                    </span>
-                                    <span className="opacity-50 text-xl">›</span>
-                                </button>
+                    {/* القارئ */}
+                    {view === 'reader' && currentSurah && (
+                        <div className="flex-1 overflow-y-auto no-scrollbar relative w-full reader-content">
+                            <div className="px-2 pt-3 pb-32 text-center w-full round-watch-safe">
+                                {currentSurah.number !== 9 && currentSurah.number !== 1 && (
+                                    <div className="text-xl font-quran mb-6 opacity-70">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>
+                                )}
+                                
+                                <div style={{fontSize: fontSize + 'px', lineHeight: '2.5'}} className="font-quran relative" dir="rtl">
+                                    {currentSurah.ayahs.map((ayah) => {
+                                        let text = ayah.text.replace("بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", "").trim();
+                                        const isSel = selectedAyah === ayah.numberInSurah;
+                                        const isLastPos = lastSavedPosition?.surah === currentSurah.number && 
+                                                         lastSavedPosition?.ayah === ayah.numberInSurah;
+                                    
+                                        return (
+                                            <span 
+                                                key={ayah.number}
+                                                id={`ayah-${ayah.numberInSurah}`}
+                                                onClick={() => setSelectedAyah(ayah.numberInSurah)}
+                                                style={{backgroundColor: isSel ? (darkMode ? '#172554' : '#fef9c3') : 'transparent'}}
+                                                className="inline rounded px-1 transition-colors relative"
+                                            >
+                                                {isLastPos && !isSel && (
+                                                    <span className="last-position-indicator" style={{background: colors.accent}}></span>
+                                                )}
+                                                {text}
+                                                {" "}
+                                                <span 
+                                                    className="ayah-marker select-none"
+                                                    style={{color: colors.accent}}
+                                                >
+                                                     <span className="ayah-symbol">&#1757;</span>
+                                                     <span className="ayah-number">{toArabicNum(ayah.numberInSurah)}</span>
+                                                </span>
+                                            </span>
+                                        )
+                                    })}
+                                </div>
 
-                                {/* قائمة السور */}
+                                {/* التنقل - عمودي للساعات */}
+                                <div className="mt-12 flex flex-col gap-3 px-2 w-full max-w-[280px] mx-auto">
+                                    <button 
+                                        onClick={() => loadSurah(currentSurah.number + 1)}
+                                        disabled={currentSurah.number === 114}
+                                        className="nav-btn"
+                                        style={{background: darkMode ? '#1f2937' : '#f3f4f6', color: colors.text}}
+                                    >
+                                        السورة التالية ⬇
+                                    </button>
+                                    <button 
+                                        onClick={() => loadSurah(currentSurah.number - 1)}
+                                        disabled={currentSurah.number === 1}
+                                        className="nav-btn"
+                                        style={{background: darkMode ? '#1f2937' : '#f3f4f6', color: colors.text}}
+                                    >
+                                        ⬆ السورة السابقة
+                                    </button>
+                                    
+                                    <button 
+                                        onClick={() => setView('settings')}
+                                        className="mt-4 opacity-60 text-sm font-bold flex items-center justify-center gap-2 py-3"
+                                    >
+                                        <Icon d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" size={16} />
+                                        الإعدادات
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* القائمة المنبثقة (Overlay) */}
+                    {showList && (
+                        <div className="surah-list-overlay" style={{background: colors.bg}}>
+                            <div 
+                                style={{backgroundColor: colors.headerBg, borderBottom: `1px solid ${colors.border}`}} 
+                                className="flex items-center justify-between p-3 h-14 round-watch-safe"
+                            >
+                                <div className="font-bold text-lg">فهرس السور</div>
+                                <button 
+                                    onClick={() => setShowList(false)}
+                                    className="text-2xl opacity-70 px-2"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                            
+                            <div className="overflow-y-auto no-scrollbar h-[calc(100vh-56px)] pb-6">
                                 {surahs.map(s => (
                                     <button 
                                         key={s.number}
-                                        onClick={(e) => { e.stopPropagation(); loadSurah(s.number); }}
-                                        className="w-full p-4 border-b active:opacity-50 flex justify-between items-center text-right round-watch-safe"
+                                        onClick={() => loadSurah(s.number)}
+                                        // هنا التعديل المهم: استخدام watch-list-item لتوسيط النص في الساعات
+                                        className="w-full p-4 border-b active:bg-black/5 flex justify-between items-center text-right round-watch-safe watch-list-item"
                                         style={{borderColor: colors.border, color: colors.text}}
                                     >
                                         <span className="font-bold font-quran text-2xl">{toArabicNum(s.number)}. {s.name}</span>
-                                        {!isWatch && <span className="text-sm opacity-50">{s.englishName}</span>}
+                                        {/* إخفاء الانجليزي في الساعات فقط */}
+                                        <span className={`text-sm opacity-50 ${isWatch ? 'hide-on-watch' : ''}`}>{s.englishName}</span>
                                     </button>
                                 ))}
                             </div>
-                        )}
+                        </div>
+                    )}
 
-                        {/* 2. واجهة القارئ */}
-                        {view === 'reader' && currentSurah && (
-                            <div className="reader-content pb-32 pt-2">
-                                <div className="text-center w-full">
-                                    {/* البسملة */}
-                                    {currentSurah.number !== 9 && currentSurah.number !== 1 && (
-                                        <div className="text-xl font-quran mb-6 opacity-70 mt-2">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>
-                                    )}
-                                    
-                                    {/* النص القرآني */}
-                                    <div style={{fontSize: fontSize + 'px', lineHeight: '2.5'}} className="font-quran relative px-1" dir="rtl">
-                                        {currentSurah.ayahs.map((ayah) => {
-                                            let text = ayah.text.replace("بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", "").trim();
-                                            const isSel = selectedAyah === ayah.numberInSurah;
-                                            const isLastPos = lastSavedPosition?.surah === currentSurah.number && 
-                                                             lastSavedPosition?.ayah === ayah.numberInSurah;
-                                        
-                                            return (
-                                                <span 
-                                                    key={ayah.number}
-                                                    id={`ayah-${ayah.numberInSurah}`}
-                                                    onClick={(e) => { e.stopPropagation(); setSelectedAyah(ayah.numberInSurah); }}
-                                                    style={{backgroundColor: isSel ? (darkMode ? '#1e3a8a' : '#fef08a') : 'transparent'}}
-                                                    className="inline rounded px-1 transition-colors relative"
-                                                >
-                                                    {isLastPos && !isSel && (
-                                                        <span className="last-position-indicator" style={{background: colors.accent}}></span>
-                                                    )}
-                                                    {text}
-                                                    {" "}
-                                                    <span 
-                                                        className="ayah-marker select-none"
-                                                        style={{color: colors.accent}}
-                                                    >
-                                                         <span className="ayah-symbol">&#1757;</span>
-                                                         <span className="ayah-number">{toArabicNum(ayah.numberInSurah)}</span>
-                                                    </span>
-                                                </span>
-                                            )
-                                        })}
-                                    </div>
-
-                                    {/* أزرار التنقل */}
-                                    <div className="mt-12 flex flex-col gap-3 px-2 w-full max-w-[280px] mx-auto round-watch-safe">
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); loadSurah(currentSurah.number + 1); }}
-                                            disabled={currentSurah.number === 114}
-                                            className="nav-btn"
-                                            style={{background: colors.secondary, color: colors.text}}
-                                        >
-                                            السورة التالية ⬇
-                                        </button>
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); loadSurah(currentSurah.number - 1); }}
-                                            disabled={currentSurah.number === 1}
-                                            className="nav-btn"
-                                            style={{background: colors.secondary, color: colors.text}}
-                                        >
-                                            ⬆ السورة السابقة
-                                        </button>
+                    {/* الإعدادات (Modal) */}
+                    {view === 'settings' && (
+                        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
+                            <div style={{background: colors.bg, borderColor: colors.border}} className="p-6 rounded-2xl w-full max-w-[300px] text-center border">
+                                <h3 className="font-bold mb-6 text-xl font-ui">الإعدادات</h3>
+                                
+                                <div className="mb-6">
+                                    <p className="text-sm opacity-70 mb-3">حجم الخط</p>
+                                    <div className="flex justify-center gap-3">
+                                        <button onClick={() => setFontSize(f => Math.max(18, f-2))} className="w-12 h-12 bg-gray-200 text-black rounded-xl font-bold text-2xl flex items-center justify-center">-</button>
+                                        <span className="text-3xl font-quran flex items-center min-w-[60px] justify-center">{toArabicNum(fontSize)}</span>
+                                        <button onClick={() => setFontSize(f => Math.min(60, f+2))} className="w-12 h-12 bg-gray-200 text-black rounded-xl font-bold text-2xl flex items-center justify-center">+</button>
                                     </div>
                                 </div>
+                                
+                                <button onClick={() => setDarkMode(!darkMode)} className="w-full py-4 mb-4 rounded-xl bg-gray-200 text-black font-bold font-ui text-lg">
+                                    {darkMode ? '☀️ الوضع النهاري' : '🌙 الوضع الليلي'}
+                                </button>
+                                
+                                <button onClick={() => setView('reader')} className="w-full py-3 rounded-xl font-bold font-ui" style={{color: colors.accent}}>
+                                    رجوع
+                                </button>
                             </div>
-                        )}
-
-                        {/* 3. واجهة الإعدادات (Modal) */}
-                        {view === 'settings' && (
-                            <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50 animate-fade-in">
-                                <div style={{background: colors.bg, borderColor: colors.border}} className="p-6 rounded-2xl w-full max-w-[300px] text-center border shadow-2xl">
-                                    <h3 className="font-bold mb-6 text-xl font-ui">الإعدادات</h3>
-                                    
-                                    <div className="mb-6">
-                                        <p className="text-sm opacity-70 mb-3">حجم الخط</p>
-                                        <div className="flex justify-center gap-3">
-                                            <button onClick={() => setFontSize(f => Math.max(18, f-2))} className="w-12 h-12 bg-gray-200 text-black rounded-xl font-bold text-2xl flex items-center justify-center">-</button>
-                                            <span className="text-3xl font-quran flex items-center min-w-[60px] justify-center">{toArabicNum(fontSize)}</span>
-                                            <button onClick={() => setFontSize(f => Math.min(60, f+2))} className="w-12 h-12 bg-gray-200 text-black rounded-xl font-bold text-2xl flex items-center justify-center">+</button>
-                                        </div>
-                                    </div>
-                                    
-                                    <button onClick={() => setDarkMode(!darkMode)} className="w-full py-4 mb-4 rounded-xl bg-gray-200 text-black font-bold font-ui text-lg">
-                                        {darkMode ? '☀️ الوضع النهاري' : '🌙 الوضع الليلي'}
-                                    </button>
-                                    
-                                    <button onClick={() => setView('list')} className="w-full py-3 rounded-xl font-bold font-ui text-red-500 border border-red-200">
-                                        إغلاق
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             );
         }
