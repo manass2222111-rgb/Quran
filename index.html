@@ -224,11 +224,11 @@
             return (
                 <div style={{background: colors.bg, color: colors.text}} className="h-full flex flex-col font-ui">
                     
-                    {/* الشريط العلوي */}
+                    {/* الشريط العلوي - ضغط عليه يفتح القائمة */}
                     <div 
                         onClick={() => setShowList(true)}
                         style={{backgroundColor: colors.headerBg, borderBottom: `1px solid ${colors.border}`}} 
-                        className="flex items-center justify-center p-3 shrink-0 h-14 relative z-20 active:opacity-70 transition-opacity round-watch-safe"
+                        className="flex items-center justify-center p-3 shrink-0 h-14 relative z-20 active:opacity-70 transition-opacity round-watch-safe cursor-pointer"
                     >
                         <div className="font-bold text-lg truncate px-2 text-center w-full select-none">
                             {currentSurah?.name || 'نور القرآن'}
@@ -244,16 +244,16 @@
                         <div className="flex-1 overflow-y-auto no-scrollbar relative w-full reader-content">
                             <div className="px-2 pt-3 pb-32 text-center w-full round-watch-safe">
                                 {currentSurah.number !== 9 && currentSurah.number !== 1 && (
-                                    <div className="text-xl font-quran mb-6 opacity-70">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>
+                                    <div className="text-xl font-quran mb-6 opacity-70">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>
                                 )}
                                 
                                 <div style={{fontSize: fontSize + 'px', lineHeight: '2.5'}} className="font-quran relative" dir="rtl">
                                     {currentSurah.ayahs.map((ayah) => {
-                                        let text = ayah.text.replace("بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", "").trim();
+                                        let text = ayah.text.replace("بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", "").trim();
                                         const isSel = selectedAyah === ayah.numberInSurah;
                                         const isLastPos = lastSavedPosition?.surah === currentSurah.number && 
                                                          lastSavedPosition?.ayah === ayah.numberInSurah;
-                                        
+                                    
                                         return (
                                             <span 
                                                 key={ayah.number}
