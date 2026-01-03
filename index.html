@@ -23,6 +23,12 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+        /* تنسيق خاص للساعة لضمان عدم القص */
+        .watch-safe-area {
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+
         .watch-list-item {
             padding: 15px 5px;
             border-bottom: 1px solid #eee;
@@ -50,13 +56,13 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin: 0 4px; /* مسافة صغيرة */
+            margin: 0 4px;
             vertical-align: middle;
-            height: 0.9em; /* تصغير الارتفاع */
-            width: 0.9em;  /* تصغير العرض */
+            height: 0.9em;
+            width: 0.9em;
         }
         .ayah-symbol {
-            font-size: 0.85em; /* تصغير الرمز نقطة */
+            font-size: 0.85em;
             line-height: 1;
         }
         .ayah-number {
@@ -69,30 +75,13 @@
             font-weight: bold;
             line-height: 1;
         }
-
-        /* زر الفهرس العائم */
-        .fab-menu {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            z-index: 100;
-            transition: transform 0.2s;
-        }
-        .fab-menu:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
     <div id="root" class="h-screen w-screen overflow-hidden flex flex-col"></div>
 
     <script type="text/babel">
-        const Icon = ({ d, size=20 }) => (
+        const Icon = ({ d, size=24 }) => (
             <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
         );
 
@@ -102,7 +91,7 @@
             const [surahs, setSurahs] = React.useState([]);
             const [currentSurah, setCurrentSurah] = React.useState(null);
             const [view, setView] = React.useState('loading');
-            const [fontSize, setFontSize] = React.useState(() => parseInt(localStorage.getItem('q_fs')) || 24);
+            const [fontSize, setFontSize] = React.useState(() => parseInt(localStorage.getItem('q_fs')) || 26);
             const [darkMode, setDarkMode] = React.useState(() => localStorage.getItem('q_dm') === 'true');
             const [selectedAyah, setSelectedAyah] = React.useState(null);
             
@@ -148,8 +137,8 @@
             };
 
             const colors = darkMode ? 
-                { bg: '#000000', text: '#e0e0e0', headerBg: '#111', border: '#333', fab: '#334155' } : 
-                { bg: '#fdfbf7', text: '#000000', headerBg: '#fff', border: '#e5e5e5', fab: '#059669' };
+                { bg: '#000000', text: '#e0e0e0', headerBg: '#111', border: '#333' } : 
+                { bg: '#fdfbf7', text: '#000000', headerBg: '#fff', border: '#e5e5e5' };
 
             if (view === 'loading') return (
                 <div style={{background: colors.bg, color: colors.text}} className="h-full flex items-center justify-center font-ui text-xl font-bold">
@@ -160,42 +149,40 @@
             return (
                 <div style={{background: colors.bg, color: colors.text}} className="h-full flex flex-col font-ui transition-colors duration-0">
                     
-                    {/* زر الفهرس العائم - يظهر فقط في وضع القراءة */}
-                    {view === 'reader' && (
+                    {/* الشريط العلوي الجديد - أزرار واضحة جداً */}
+                    <div style={{backgroundColor: colors.headerBg, borderBottom: `1px solid ${colors.border}`}} className="flex items-center justify-between p-2 h-16 shrink-0 z-20 shadow-sm px-4">
+                        
+                        {/* زر الإعدادات (يمين) */}
                         <button 
-                            onClick={() => setView('list')}
-                            className="fab-menu text-white"
-                            style={{backgroundColor: colors.fab}}
-                            title="الفهرس"
+                            onClick={() => setView('settings')} 
+                            className="p-2 rounded-full hover:bg-black/10 active:scale-95 transition-transform"
                         >
-                            <Icon d="M4 6h16M4 12h16M4 18h16" size={24} />
+                            <Icon d="M12 15a3 3 0 100-6 3 3 0 000 6z" size={26} /> 
                         </button>
-                    )}
 
-                    {/* الشريط العلوي */}
-                    <div style={{backgroundColor: colors.headerBg, borderBottom: `1px solid ${colors.border}`}} className="flex items-center justify-center p-2 shrink-0 h-14 relative z-20">
-                        {/* العنوان في المنتصف تماماً */}
-                        <div className="font-bold text-xl truncate px-2 text-center w-full">
+                        {/* عنوان الصفحة (وسط) */}
+                        <div className="font-bold text-xl truncate text-center flex-1 mx-2 font-quran">
                             {view === 'list' ? 'فهرس السور' : currentSurah?.name}
                         </div>
 
-                        {/* زر الإعدادات (ترس) على اليسار */}
-                        {view === 'reader' && (
-                            <button 
-                                onClick={() => setView('settings')} 
-                                className="absolute left-3 p-2 opacity-60 hover:opacity-100 z-30"
-                            >
-                                <Icon d="M12 15a3 3 0 100-6 3 3 0 000 6z" /> 
-                            </button>
-                        )}
+                        {/* زر القائمة (يسار) - الرجوع للفهرس */}
+                        <button 
+                            onClick={() => setView(view === 'list' ? 'reader' : 'list')}
+                            className="p-2 rounded-full hover:bg-black/10 active:scale-95 transition-transform"
+                        >
+                            {view === 'list' ? 
+                                (currentSurah ? <Icon d="M19 12H5m7 7l-7-7 7-7" size={26} /> : <div className="w-6"></div>) : /* سهم رجوع إذا في القائمة */
+                                <Icon d="M4 6h16M4 12h16M4 18h16" size={26} /> /* أيقونة الهامبرغر للقائمة */
+                            }
+                        </button>
                     </div>
 
                     {/* المحتوى */}
-                    <div className="flex-1 overflow-y-auto no-scrollbar relative w-full">
+                    <div className="flex-1 overflow-y-auto no-scrollbar relative w-full watch-safe-area">
                         
                         {/* القائمة */}
                         {view === 'list' && (
-                            <div className="pb-10 w-full">
+                            <div className="pb-10 w-full pt-2">
                                 {surahs.map(s => (
                                     <button 
                                         key={s.number}
@@ -214,16 +201,16 @@
                         {view === 'reader' && currentSurah && (
                             <div className="px-1 pt-4 pb-24 w-full flex flex-col items-center">
                                 
-                                {/* البسملة - توسيط */}
+                                {/* البسملة - توسيط إجباري باستخدام Flexbox */}
                                 {currentSurah.number !== 9 && (
-                                    <div className="w-full text-center mb-6">
-                                        <p className="text-2xl font-quran opacity-80 leading-loose">
+                                    <div className="w-full flex justify-center items-center mb-6 text-center">
+                                        <p className="text-2xl font-quran opacity-80 leading-loose text-center w-full">
                                             بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
                                         </p>
                                     </div>
                                 )}
                                 
-                                <div style={{fontSize: fontSize + 'px', lineHeight: '2.4'}} className="font-quran text-center px-2" dir="rtl">
+                                <div style={{fontSize: fontSize + 'px', lineHeight: '2.4'}} className="font-quran text-center px-1 w-full" dir="rtl">
                                     {currentSurah.ayahs.map((ayah, i) => {
                                         let text = ayah.text.replace("بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", "").trim();
                                         const isSel = selectedAyah === ayah.numberInSurah;
@@ -239,7 +226,6 @@
                                                 className="inline rounded px-1 transition-colors"
                                             >
                                                 {text}
-                                                {/* الفاصل المصغر */}
                                                 <span 
                                                     className="ayah-marker select-none"
                                                     style={{color: darkMode ? '#fbbf24' : '#d97706'}}
@@ -287,7 +273,7 @@
                                     <button onClick={() => setDarkMode(!darkMode)} className="w-full py-4 mb-4 rounded-xl bg-gray-200 text-black font-bold font-ui">
                                         {darkMode ? '☀️ الوضع النهاري' : '🌙 الوضع الليلي'}
                                     </button>
-                                    <button onClick={() => setView('reader')} className="text-red-500 font-bold p-2 w-full font-ui">إغلاق X</button>
+                                    <button onClick={() => setView('reader')} className="text-red-500 font-bold p-2 w-full font-ui mt-2 text-lg">إغلاق X</button>
                                 </div>
                             </div>
                         )}
