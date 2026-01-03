@@ -50,7 +50,7 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin: 0 6px; /* تم تقليل المسافة هنا */
+            margin: 0 6px; 
             vertical-align: middle;
             height: 1em;
             width: 1em;
@@ -61,14 +61,14 @@
         }
         .ayah-number {
             position: absolute;
-            font-size: 0.4em; /* حجم الرقم داخل الدائرة */
-            font-family: 'Tajawal', sans-serif; /* خط واضح للأرقام الصغيرة */
+            font-size: 0.4em;
+            font-family: 'Tajawal', sans-serif;
             top: 55%;
             left: 50%;
             transform: translate(-50%, -50%);
             font-weight: bold;
             line-height: 1;
-            padding-top: 2px; /* ضبط دقيق للمنتصف */
+            padding-top: 2px;
         }
     </style>
 </head>
@@ -80,7 +80,6 @@
             <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
         );
 
-        // دالة تحويل الأرقام للعربية
         const toArabicNum = (n) => n.toString().replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
 
         function App() {
@@ -145,27 +144,21 @@
             return (
                 <div style={{background: colors.bg, color: colors.text}} className="h-full flex flex-col font-ui transition-colors duration-0">
                     
-                    {/* الشريط العلوي */}
-                    <div style={{backgroundColor: colors.headerBg, borderBottom: `1px solid ${colors.border}`}} className="flex items-center p-2 shrink-0 h-14 relative z-20">
-                        <button 
-                            onClick={() => {
-                                    if (view === 'reader') setView('list');
-                                    else if (view === 'list' && currentSurah) setView('reader');
-                            }}
-                            className="w-full h-full flex items-center justify-center gap-2 active:opacity-50"
-                        >
-                            <span className="font-bold text-xl truncate px-2">
-                                {view === 'list' ? 'فهرس السور' : currentSurah?.name}
-                            </span>
-                            {view === 'reader' && <Icon d="M19 9l-7 7-7-7" size={16} />}
-                        </button>
+                    {/* الشريط العلوي - المنطقة بالكامل زر واحد */}
+                    <div 
+                        onClick={() => { if (view === 'reader') setView('list'); }}
+                        style={{backgroundColor: colors.headerBg, borderBottom: `1px solid ${colors.border}`}} 
+                        className="flex items-center justify-center p-2 shrink-0 h-14 relative z-20 active:opacity-70 transition-opacity"
+                    >
+                        <div className="font-bold text-xl truncate px-2 text-center w-full select-none">
+                            {view === 'list' ? 'فهرس السور' : currentSurah?.name}
+                        </div>
+
+                        {/* أيقونة القائمة تظهر فقط عند القراءة لتوضيح أن الضغط يعيد للفهرس */}
                         {view === 'reader' && (
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); setView('settings'); }} 
-                                className="absolute left-3 top-1/2 -translate-y-1/2 p-2 opacity-60 hover:opacity-100"
-                            >
-                                <Icon d="M12 15a3 3 0 100-6 3 3 0 000 6z" /> 
-                            </button>
+                            <div className="absolute left-4 opacity-50">
+                                <Icon d="M4 6h16M4 12h16M4 18h16" size={24} />
+                            </div>
                         )}
                     </div>
 
@@ -175,6 +168,18 @@
                         {/* القائمة */}
                         {view === 'list' && (
                             <div className="pb-10 w-full">
+                                {/* زر الإعدادات الجديد في أعلى القائمة */}
+                                <button 
+                                    onClick={() => setView('settings')}
+                                    className="w-full p-4 border-b bg-gray-100/10 text-lg font-bold flex justify-between items-center"
+                                    style={{borderColor: colors.border, color: colors.text}}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <Icon d="M12 15a3 3 0 100-6 3 3 0 000 6z" size={20} />
+                                        الإعدادات / الوضع الليلي
+                                    </span>
+                                </button>
+
                                 {surahs.map(s => (
                                     <button 
                                         key={s.number}
@@ -213,7 +218,6 @@
                                             >
                                                 {text}
                                                 {" "}
-                                                {/* تنسيق الآية الجديد: الرقم داخل الرمز */}
                                                 <span 
                                                     className="ayah-marker select-none"
                                                     style={{color: darkMode ? '#fbbf24' : '#d97706'}}
@@ -244,6 +248,15 @@
                                     >
                                         &#8593; السورة السابقة
                                     </button>
+                                    
+                                    {/* زر إعدادات إضافي في الأسفل للوصول السريع */}
+                                    <button 
+                                        onClick={() => setView('settings')}
+                                        className="mt-4 opacity-50 text-sm font-bold flex items-center justify-center gap-2 py-2"
+                                    >
+                                        <Icon d="M12 15a3 3 0 100-6 3 3 0 000 6z" size={16} />
+                                        إعدادات القراءة
+                                    </button>
                                 </div>
                             </div>
                         )}
@@ -261,7 +274,7 @@
                                     <button onClick={() => setDarkMode(!darkMode)} className="w-full py-4 mb-4 rounded-xl bg-gray-200 text-black font-bold font-ui">
                                         {darkMode ? '☀️ الوضع النهاري' : '🌙 الوضع الليلي'}
                                     </button>
-                                    <button onClick={() => setView('reader')} className="text-red-500 font-bold p-2 w-full font-ui">إغلاق X</button>
+                                    <button onClick={() => setView('list')} className="text-red-500 font-bold p-2 w-full font-ui">إغلاق X</button>
                                 </div>
                             </div>
                         )}
