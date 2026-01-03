@@ -61,14 +61,14 @@
         }
         .ayah-number {
             position: absolute;
-            font-size: 0.4em;
-            font-family: 'Tajawal', sans-serif;
+            font-size: 0.4em; /* حجم الرقم داخل الدائرة */
+            font-family: 'Tajawal', sans-serif; /* خط واضح للأرقام الصغيرة */
             top: 55%;
             left: 50%;
             transform: translate(-50%, -50%);
             font-weight: bold;
             line-height: 1;
-            padding-top: 2px;
+            padding-top: 2px; /* ضبط دقيق للمنتصف */
         }
     </style>
 </head>
@@ -80,6 +80,7 @@
             <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
         );
 
+        // دالة تحويل الأرقام للعربية
         const toArabicNum = (n) => n.toString().replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
 
         function App() {
@@ -94,12 +95,18 @@
 
             React.useEffect(() => {
                 const init = async () => {
+                    // منطق البدء الذكي
                     const saved = JSON.parse(localStorage.getItem('q_save'));
+                    
                     if (saved) {
+                        // إذا في حفظ سابق -> افتحه
                         loadSurah(saved.surah, saved.ayah);
                     } else {
-                        setView('list');
+                        // مستخدم جديد -> افتح الفاتحة مباشرة
+                        loadSurah(1); 
                     }
+                    
+                    // تحميل القائمة في الخلفية
                     try {
                         const res = await fetch('https://api.alquran.cloud/v1/surah');
                         const data = await res.json();
@@ -127,6 +134,7 @@
                         }, 500);
                     }
                 } catch (e) {
+                    // في حال فشل تحميل الفاتحة (لا انترنت مثلاً) نذهب للقائمة
                     setView('list');
                 }
             };
@@ -184,10 +192,11 @@
                                     <button 
                                         key={s.number}
                                         onClick={() => loadSurah(s.number)}
-                                        className={isWatch ? "watch-list-item" : "w-full p-4 border-b text-lg hover:bg-black/5 flex justify-between items-center text-right"}
+                                        className={isWatch ? "watch-list-item" : "w-full p-4 border-b hover:bg-black/5 flex justify-between items-center text-right"}
                                         style={{borderColor: colors.border, color: colors.text}}
                                     >
-                                        <span className="font-bold font-quran">{toArabicNum(s.number)}. {s.name}</span>
+                                        {/* تم تكبير الخط هنا */}
+                                        <span className="font-bold font-quran text-2xl">{toArabicNum(s.number)}. {s.name}</span>
                                         {!isWatch && <span className="text-sm opacity-50">{s.englishName}</span>}
                                     </button>
                                 ))}
