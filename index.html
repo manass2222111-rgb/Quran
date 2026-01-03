@@ -44,31 +44,48 @@
             font-size: 16px;
         }
 
-        /* تنسيق الآية المتطور (مصحح) */
+        /* تنسيق الآية المصغر */
         .ayah-marker {
             position: relative;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin: 0 6px; /* زيادة المسافة الجانبية لمنع الالتصاق */
+            margin: 0 4px; /* مسافة صغيرة */
             vertical-align: middle;
-            height: 1em;
-            width: 1em;
+            height: 0.9em; /* تصغير الارتفاع */
+            width: 0.9em;  /* تصغير العرض */
         }
         .ayah-symbol {
-            font-size: 0.9em; /* تصغير الرمز نقطة واحدة */
+            font-size: 0.85em; /* تصغير الرمز نقطة */
             line-height: 1;
         }
         .ayah-number {
             position: absolute;
-            font-size: 0.42em; 
+            font-size: 0.45em; 
             font-family: 'Tajawal', sans-serif;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -45%); /* ضبط دقيق للمنتصف */
+            transform: translate(-50%, -45%);
             font-weight: bold;
             line-height: 1;
         }
+
+        /* زر الفهرس العائم */
+        .fab-menu {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 100;
+            transition: transform 0.2s;
+        }
+        .fab-menu:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
@@ -131,8 +148,8 @@
             };
 
             const colors = darkMode ? 
-                { bg: '#000000', text: '#e0e0e0', headerBg: '#111', border: '#333' } : 
-                { bg: '#fdfbf7', text: '#000000', headerBg: '#fff', border: '#e5e5e5' };
+                { bg: '#000000', text: '#e0e0e0', headerBg: '#111', border: '#333', fab: '#334155' } : 
+                { bg: '#fdfbf7', text: '#000000', headerBg: '#fff', border: '#e5e5e5', fab: '#059669' };
 
             if (view === 'loading') return (
                 <div style={{background: colors.bg, color: colors.text}} className="h-full flex items-center justify-center font-ui text-xl font-bold">
@@ -143,29 +160,30 @@
             return (
                 <div style={{background: colors.bg, color: colors.text}} className="h-full flex flex-col font-ui transition-colors duration-0">
                     
+                    {/* زر الفهرس العائم - يظهر فقط في وضع القراءة */}
+                    {view === 'reader' && (
+                        <button 
+                            onClick={() => setView('list')}
+                            className="fab-menu text-white"
+                            style={{backgroundColor: colors.fab}}
+                            title="الفهرس"
+                        >
+                            <Icon d="M4 6h16M4 12h16M4 18h16" size={24} />
+                        </button>
+                    )}
+
                     {/* الشريط العلوي */}
-                    <div style={{backgroundColor: colors.headerBg, borderBottom: `1px solid ${colors.border}`}} className="flex items-center p-2 shrink-0 h-14 relative z-20">
-                        {/* العنوان كزر رئيسي - توسيط مطلق */}
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                             <button 
-                                onClick={() => {
-                                        if (view === 'reader') setView('list');
-                                        else if (view === 'list' && currentSurah) setView('reader');
-                                }}
-                                className="pointer-events-auto flex items-center justify-center gap-2 active:opacity-50 max-w-[70%]"
-                            >
-                                <span className="font-bold text-xl truncate px-2 text-center">
-                                    {view === 'list' ? 'فهرس السور' : currentSurah?.name}
-                                </span>
-                                {view === 'reader' && <Icon d="M19 9l-7 7-7-7" size={16} />}
-                            </button>
+                    <div style={{backgroundColor: colors.headerBg, borderBottom: `1px solid ${colors.border}`}} className="flex items-center justify-center p-2 shrink-0 h-14 relative z-20">
+                        {/* العنوان في المنتصف تماماً */}
+                        <div className="font-bold text-xl truncate px-2 text-center w-full">
+                            {view === 'list' ? 'فهرس السور' : currentSurah?.name}
                         </div>
 
-                        {/* زر الإعدادات */}
+                        {/* زر الإعدادات (ترس) على اليسار */}
                         {view === 'reader' && (
                             <button 
-                                onClick={(e) => { e.stopPropagation(); setView('settings'); }} 
-                                className="absolute left-3 top-1/2 -translate-y-1/2 p-2 opacity-60 hover:opacity-100 z-30"
+                                onClick={() => setView('settings')} 
+                                className="absolute left-3 p-2 opacity-60 hover:opacity-100 z-30"
                             >
                                 <Icon d="M12 15a3 3 0 100-6 3 3 0 000 6z" /> 
                             </button>
@@ -196,7 +214,7 @@
                         {view === 'reader' && currentSurah && (
                             <div className="px-1 pt-4 pb-24 w-full flex flex-col items-center">
                                 
-                                {/* البسملة - توسيط إجباري */}
+                                {/* البسملة - توسيط */}
                                 {currentSurah.number !== 9 && (
                                     <div className="w-full text-center mb-6">
                                         <p className="text-2xl font-quran opacity-80 leading-loose">
