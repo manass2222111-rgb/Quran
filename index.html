@@ -21,13 +21,12 @@
             padding: 0; 
             user-select: none; 
             -webkit-tap-highlight-color: transparent;
-            overscroll-behavior: none; /* منع ارتداد المتصفح */
             height: 100vh;
             width: 100vw;
-            overflow: hidden;
+            overflow: hidden; /* لمنع سكرول الصفحة الرئيسية */
         }
         
-        .font-quran { font-family: 'Amiri', serif; line-height: 2.2; }
+        .font-quran { font-family: 'Amiri', serif; line-height: 2.3; }
         .font-ui { font-family: 'Tajawal', sans-serif; }
         
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -70,20 +69,21 @@
         }
 
         /* تنسيق صفحة المصحف */
-        .mushaf-page {
-            text-align: justify;
-            text-align-last: center; /* السطر الأخير في الصفحة يكون في الوسط */
-            padding: 0 10px;
+        .mushaf-page-content {
+            text-align: justify; /* ضبط النص كالمصحف */
+            text-align-last: center; /* آخر سطر في الوسط */
+            padding-bottom: 60px; /* مساحة في الأسفل للسكرول */
         }
 
-        /* رأس السورة داخل الصفحة */
-        .surah-header-frame {
-            border: 1px solid currentColor;
+        /* إطار بداية السورة */
+        .surah-frame {
+            margin: 15px 0 10px 0;
+            padding: 8px;
+            border: 1px double currentColor;
             border-radius: 8px;
-            margin: 10px 0;
-            padding: 5px;
             text-align: center;
-            background: rgba(0,0,0,0.05);
+            font-weight: bold;
+            background-color: rgba(0,0,0,0.03);
         }
     </style>
 </head>
@@ -98,47 +98,45 @@
         const toArabicNum = (n) => n.toString().replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
 
         function App() {
-            // State
+            // البيانات
             const [surahs, setSurahs] = React.useState([]);
-            const [currentPageData, setCurrentPageData] = React.useState(null);
+            const [pageData, setPageData] = React.useState(null); // بيانات الصفحة الحالية (وليس السورة)
             const [currentPageNum, setCurrentPageNum] = React.useState(1);
+            
             const [view, setView] = React.useState('loading'); 
             const [fontSize, setFontSize] = React.useState(() => parseInt(localStorage.getItem('q_fs')) || 22);
             const [darkMode, setDarkMode] = React.useState(() => localStorage.getItem('q_dm') === 'true');
             
-            // Touch Handling for Swipe
-            const [touchStart, setTouchStart] = React.useState(null);
-            const [touchEnd, setTouchEnd] = React.useState(null);
-
-            const minSwipeDistance = 50;
-            const isWatch = window.innerWidth <= 450;
+            // متغيرات السحب (Swipe)
+            const touchStartRef = React.useRef(null);
+            const minSwipeDistance = 50; 
 
             // --- التحميل الأولي ---
             React.useEffect(() => {
                 const init = async () => {
-                    const saved = JSON.parse(localStorage.getItem('q_save_page'));
+                    const savedPage = JSON.parse(localStorage.getItem('q_saved_page'));
                     
-                    // جلب قائمة السور (لمعرفة بداية كل سورة في أي صفحة)
+                    // تحميل القائمة
                     try {
                         const res = await fetch('https://api.alquran.cloud/v1/surah');
                         const data = await res.json();
                         setSurahs(data.data);
                     } catch(e) {}
 
-                    if (saved) {
-                        loadPage(saved.page);
+                    // فتح آخر صفحة محفوظة أو الصفحة 1
+                    if (savedPage) {
+                        loadPage(savedPage);
                     } else {
-                        loadPage(1); // الفاتحة (صفحة 1)
+                        loadPage(1); 
                     }
                 };
                 init();
             }, []);
 
-            // حفظ الإعدادات
             React.useEffect(() => { localStorage.setItem('q_fs', fontSize); }, [fontSize]);
             React.useEffect(() => { localStorage.setItem('q_dm', darkMode); }, [darkMode]);
 
-            // --- تحميل الصفحة (بيانات صفحة كاملة) ---
+            // --- دالة تحميل صفحة مصحف (1-604) ---
             const loadPage = async (pageNum) => {
                 if (pageNum < 1 || pageNum > 604) return;
                 
@@ -146,39 +144,47 @@
                 try {
                     const res = await fetch(`https://api.alquran.cloud/v1/page/${pageNum}/quran-uthmani`);
                     const data = await res.json();
-                    setCurrentPageData(data.data);
+                    setPageData(data.data);
                     setCurrentPageNum(pageNum);
                     setView('reader');
+                    localStorage.setItem('q_saved_page', JSON.stringify(pageNum));
                     
-                    // حفظ رقم الصفحة
-                    localStorage.setItem('q_save_page', JSON.stringify({ page: pageNum }));
+                    // إعادة السكرول للأعلى عند قلب الصفحة
+                    const container = document.getElementById('page-container');
+                    if (container) container.scrollTop = 0;
+                    
                 } catch (e) {
-                    // في حال الفشل
                     setView('list'); 
                 }
             };
 
-            // --- منطق السحب (Swipe) ---
+            // --- دالة الانتقال لسورة (نبحث عن رقم صفحتها) ---
+            const goToSurah = async (surahNumber) => {
+                setView('loading');
+                try {
+                    // نطلب الآية الأولى من السورة لنعرف في أي صفحة تقع
+                    const res = await fetch(`https://api.alquran.cloud/v1/ayah/${surahNumber}:1`);
+                    const data = await res.json();
+                    loadPage(data.data.page); // نفتح الصفحة التي وجدت فيها السورة
+                } catch (e) {
+                    loadPage(1);
+                }
+            };
+
+            // --- معالجة السحب (Swipe Logic) ---
             const onTouchStart = (e) => {
-                setTouchEnd(null); 
-                setTouchStart(e.targetTouches[0].clientX);
+                touchStartRef.current = e.targetTouches[0].clientX;
             }
 
-            const onTouchMove = (e) => {
-                setTouchEnd(e.targetTouches[0].clientX);
-            }
-
-            const onTouchEnd = () => {
-                if (!touchStart || !touchEnd) return;
-                const distance = touchStart - touchEnd;
+            const onTouchEnd = (e) => {
+                if (!touchStartRef.current) return;
+                const touchEnd = e.changedTouches[0].clientX;
+                const distance = touchStartRef.current - touchEnd;
                 const isLeftSwipe = distance > minSwipeDistance;
                 const isRightSwipe = distance < -minSwipeDistance;
 
                 if (isLeftSwipe) {
-                    // سحب لليسار = الصفحة التالية (نحن عربية)
-                    // في الكتب العربية: الصفحة التالية تعني قلب الورقة لليمين، لكن في اللمس:
-                    // سحب لليسار (Next) | سحب لليمين (Prev)
-                    // لكن بما ان الاتجاه RTL:
+                    // سحب لليسار = الصفحة التالية
                     loadPage(currentPageNum + 1);
                 }
                 if (isRightSwipe) {
@@ -187,38 +193,12 @@
                 }
             }
 
-            // --- الانتقال لسورة معينة (تحويل السورة لرقم صفحة) ---
-            const goToSurah = (surahObj) => {
-                // للأسف الAPI في قائمة السور لا يعطي رقم الصفحة مباشرة في كل الأحوال
-                // لكن معظم البيانات تتضمن ذلك. سنفترض أننا نملك خرائط أو نعتمد على التحميل
-                // الحل الأبسط: الانتقال لأول آية في السورة، الAPI سيجلب الصفحة.
-                // لكن هنا سنستخدم ميزة في api alquran cloud: الانتقال لصفحة السورة
-                // نحتاج معرفة رقم صفحة السورة. القائمة المحملة تحتوي "page" غالباً
-                // إذا لم توجد، سنستخدم منطق تقريبي أو نطلب الآية 1.
-                // لتسهيل الأمر في هذا التطبيق الخفيف: سننتقل للصفحة التي تبدأ فيها السورة.
-                // (بيانات surahs API تحتوي على رقم الصفحة)
-                // *ملاحظة: نسخة alquran.cloud العادية لا ترجع رقم الصفحة في قائمة السور المبسطة*
-                // لذلك سنقوم بحيلة: تحميل السورة كاملة لمعرفة صفحتها؟ لا، ثقيل.
-                // الحل: البحث عن رقم الصفحة يدوياً أو الاعتماد على أن المستخدم يتصفح.
-                // *تصحيح*: سنعتمد على المستخدم يقلب، أو نستخدم مصفوفة بسيطة لبدايات الصفحات إذا لزم الأمر.
-                // ولكن للتبسيط: عند الضغط على سورة، سنحمل الآية 1 من السورة، ونعرف منها رقم الصفحة.
-                
-                setView('loading');
-                fetch(`https://api.alquran.cloud/v1/ayah/${surahObj.number}:1`)
-                    .then(r => r.json())
-                    .then(d => {
-                        loadPage(d.data.page);
-                    })
-                    .catch(() => loadPage(1));
-            };
-
             const colors = darkMode ? 
                 { bg: '#000000', text: '#e0e0e0', headerBg: '#111', border: '#333', accent: '#fbbf24', secondary: '#1f2937' } : 
                 { bg: '#fdfbf7', text: '#000000', headerBg: '#fff', border: '#e5e5e5', accent: '#d97706', secondary: '#f3f4f6' };
 
-            // استخراج اسم السورة الحالية من بيانات الصفحة
-            // الصفحة قد تحتوي آيات من سور متعددة، نأخذ اسم السورة من أول آية
-            const currentSurahName = currentPageData ? currentPageData.ayahs[0].surah.name : 'نور القرآن';
+            // استخراج اسم السورة الظاهرة في الصفحة الحالية للعنوان
+            const headerTitle = view === 'list' ? 'فهرس السور' : (pageData ? pageData.ayahs[0].surah.name : 'نور القرآن');
 
             if (view === 'loading') return (
                 <div style={{background: colors.bg, color: colors.text}} className="h-full w-full flex items-center justify-center font-ui text-xl font-bold">
@@ -236,7 +216,7 @@
                         className="flex items-center justify-center p-2 shrink-0 h-12 w-full relative z-50 active:opacity-60 transition-opacity"
                     >
                         <div className="font-bold text-lg truncate px-2 text-center w-full font-quran">
-                            {view === 'list' ? 'فهرس السور' : currentSurahName}
+                            {headerTitle}
                         </div>
                         {view === 'reader' && (
                             <div className="absolute left-4 opacity-50">
@@ -253,10 +233,9 @@
                     {/* --- المحتوى --- */}
                     <div className="flex-1 w-full relative overflow-hidden">
                         
-                        {/* 1. صفحة القائمة */}
+                        {/* 1. القائمة */}
                         {view === 'list' && (
                             <div className="h-full overflow-y-auto no-scrollbar pb-10 w-full">
-                                {/* زر الإعدادات */}
                                 <button 
                                     onClick={() => setView('settings')}
                                     className="w-full p-3 border-b font-bold flex justify-between items-center round-watch-safe bg-gray-100/5"
@@ -272,7 +251,7 @@
                                 {surahs.map(s => (
                                     <button 
                                         key={s.number}
-                                        onClick={() => goToSurah(s)}
+                                        onClick={() => goToSurah(s.number)}
                                         className="w-full p-3 border-b active:bg-black/10 flex items-center text-right round-watch-safe watch-list-item"
                                         style={{borderColor: colors.border, color: colors.text}}
                                     >
@@ -285,60 +264,56 @@
                             </div>
                         )}
 
-                        {/* 2. صفحة القراءة (Mushaf Page View) */}
-                        {view === 'reader' && currentPageData && (
+                        {/* 2. القارئ (نظام الصفحات) */}
+                        {view === 'reader' && pageData && (
                             <div 
-                                className="h-full w-full flex flex-col relative"
+                                id="page-container"
+                                className="h-full w-full overflow-y-auto no-scrollbar"
                                 onTouchStart={onTouchStart}
-                                onTouchMove={onTouchMove}
                                 onTouchEnd={onTouchEnd}
                             >
-                                {/* محتوى الصفحة */}
-                                <div className="flex-1 overflow-y-auto no-scrollbar flex items-center justify-center p-1">
-                                    <div className="w-full h-full flex flex-col justify-center round-watch-safe">
+                                <div className="px-3 pt-2 round-watch-safe">
+                                    <div className="mushaf-page-content font-quran" style={{fontSize: fontSize + 'px'}}>
                                         
-                                        <div className="mushaf-page font-quran" style={{fontSize: fontSize + 'px'}}>
-                                            {currentPageData.ayahs.map((ayah, i) => {
-                                                // التحقق مما إذا كانت هذه الآية بداية سورة (رقم 1)
-                                                const isStartOfSurah = ayah.numberInSurah === 1;
-                                                const showBismillah = isStartOfSurah && ayah.surah.number !== 1 && ayah.surah.number !== 9;
-                                                let text = ayah.text;
-                                                if (showBismillah) text = text.replace("بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", "").trim();
+                                        {pageData.ayahs.map((ayah, i) => {
+                                            const isSurahStart = ayah.numberInSurah === 1;
+                                            const showBismillah = isSurahStart && ayah.surah.number !== 1 && ayah.surah.number !== 9;
+                                            let text = ayah.text;
+                                            if (showBismillah) text = text.replace("بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", "").trim();
 
-                                                return (
-                                                    <span key={i}>
-                                                        {/* رأس السورة */}
-                                                        {isStartOfSurah && (
-                                                            <div className="surah-header-frame mt-4 mb-2">
-                                                                سورة {ayah.surah.name}
-                                                            </div>
-                                                        )}
-                                                        
-                                                        {/* البسملة */}
-                                                        {showBismillah && (
-                                                            <div className="text-center w-full mb-2 opacity-80 text-sm">
-                                                                بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
-                                                            </div>
-                                                        )}
+                                            return (
+                                                <span key={i}>
+                                                    {/* رأس السورة إذا كانت بداية سورة */}
+                                                    {isSurahStart && (
+                                                        <div className="surah-frame">
+                                                            سورة {ayah.surah.name}
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {/* البسملة */}
+                                                    {showBismillah && (
+                                                        <div className="text-center w-full mb-2 opacity-80 text-sm">
+                                                            بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+                                                        </div>
+                                                    )}
 
-                                                        {/* نص الآية */}
-                                                        <span>
-                                                            {text}
-                                                            <span className="ayah-marker select-none" style={{color: colors.accent}}>
-                                                                <span className="ayah-symbol">&#1757;</span>
-                                                                <span className="ayah-number">{toArabicNum(ayah.numberInSurah)}</span>
-                                                            </span>
+                                                    {/* الآية */}
+                                                    <span>
+                                                        {text}
+                                                        <span className="ayah-marker select-none" style={{color: colors.accent}}>
+                                                            <span className="ayah-symbol">&#1757;</span>
+                                                            <span className="ayah-number">{toArabicNum(ayah.numberInSurah)}</span>
                                                         </span>
                                                     </span>
-                                                )
-                                            })}
-                                        </div>
+                                                </span>
+                                            );
+                                        })}
                                     </div>
-                                </div>
 
-                                {/* ذيل الصفحة (رقم الصفحة) */}
-                                <div className="h-8 shrink-0 flex justify-center items-center text-xs opacity-50 font-ui border-t" style={{borderColor: colors.border}}>
-                                    صفحة {toArabicNum(currentPageNum)}
+                                    {/* رقم الصفحة في الأسفل */}
+                                    <div className="text-center text-xs opacity-50 py-4 font-ui border-t mt-4" style={{borderColor: colors.border}}>
+                                        صفحة {toArabicNum(currentPageNum)}
+                                    </div>
                                 </div>
                             </div>
                         )}
