@@ -35,8 +35,9 @@
         /* تحسينات الساعة */
         @media (max-width: 450px) {
             .round-watch-safe {
-                padding-left: max(16px, env(safe-area-inset-left));
-                padding-right: max(16px, env(safe-area-inset-right));
+                /* زيادة الهوامش بشكل كبير جداً لتفادي الحواف الدائرية */
+                padding-left: 32px !important;
+                padding-right: 32px !important;
             }
             .watch-list-item {
                 justify-content: center !important;
@@ -70,7 +71,7 @@
         .mushaf-page-content {
             text-align: justify;
             text-align-last: center;
-            padding-bottom: 80px; /* مساحة كافية للسكرول */
+            padding-bottom: 100px; /* مساحة كافية جداً للسكرول */
         }
 
         .surah-frame {
@@ -266,6 +267,7 @@
                             <div 
                                 id="scroll-container"
                                 className="h-full w-full overflow-y-auto no-scrollbar"
+                                style={{touchAction: 'pan-y'}} /* هذا السطر هو الحل للسكرول */
                                 onTouchStart={onTouchStart}
                                 onTouchEnd={onTouchEnd}
                             >
@@ -339,5 +341,3 @@
     </script>
 </body>
 </html>
-```
-
