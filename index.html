@@ -15,6 +15,8 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;700&display=swap');
         
+        * { box-sizing: border-box; }
+
         body { 
             background-color: #fdfbf7; 
             margin: 0; 
@@ -23,19 +25,28 @@
             -webkit-tap-highlight-color: transparent;
             height: 100vh;
             width: 100vw;
-            overflow: hidden;
+            overflow: hidden; /* يمنع تحرك الصفحة بالكامل */
+            font-family: 'Tajawal', sans-serif;
         }
         
         .font-quran { font-family: 'Amiri', serif; line-height: 2.4; }
-        .font-ui { font-family: 'Tajawal', sans-serif; }
         
+        /* إخفاء شريط التمرير لكن السماح بالسكرول */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* منطقة القراءة القابلة للسكرول */
+        .scrollable-content {
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* سكرول ناعم */
+            padding-top: 60px; /* مساحة للشريط العلوي الثابت */
+            padding-bottom: 40px;
+        }
 
         /* تحسينات الساعة */
         @media (max-width: 450px) {
             .round-watch-safe {
-                /* زيادة الهوامش بشكل كبير جداً لتفادي الحواف الدائرية */
                 padding-left: 32px !important;
                 padding-right: 32px !important;
             }
@@ -44,6 +55,20 @@
                 text-align: center !important;
             }
             .hide-on-watch { display: none !important; }
+        }
+
+        /* الشريط العلوي الثابت */
+        .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 55px;
+            z-index: 100; /* فوق كل شيء */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         /* تنسيق الآية */
@@ -71,7 +96,6 @@
         .mushaf-page-content {
             text-align: justify;
             text-align-last: center;
-            padding-bottom: 100px; /* مساحة كافية جداً للسكرول */
         }
 
         .surah-frame {
@@ -141,7 +165,7 @@
                     setTimeout(() => {
                         const container = document.getElementById('scroll-container');
                         if (container) container.scrollTop = 0;
-                    }, 100);
+                    }, 50);
                 } catch (e) {
                     setView('list'); 
                 }
@@ -158,7 +182,7 @@
                 }
             };
 
-            // --- منطق السحب الذكي (يسمح بالسكرول والسحب معاً) ---
+            // --- منطق السحب المحسن ---
             const onTouchStart = (e) => {
                 touchStartX.current = e.touches[0].clientX;
                 touchStartY.current = e.touches[0].clientY;
@@ -173,18 +197,12 @@
                 const diffX = touchStartX.current - touchEndX;
                 const diffY = touchStartY.current - touchEndY;
 
-                // التحقق: هل الحركة أفقية أكثر منها عمودية؟
-                // إذا كانت عمودية (diffY > diffX) فهذا يعني أن المستخدم يمرر للأسفل لقراءة الصفحة -> لا تفعل شيئاً (دع المتصفح يمرر)
-                // إذا كانت أفقية (diffX > diffY) فهذا يعني أن المستخدم يريد قلب الصفحة
-                if (Math.abs(diffX) > Math.abs(diffY)) {
-                    if (Math.abs(diffX) > 50) { // مسافة سحب كافية
-                        if (diffX > 0) {
-                            // سحب لليسار -> الصفحة التالية
-                            loadPage(currentPageNum + 1);
-                        } else {
-                            // سحب لليمين -> الصفحة السابقة
-                            loadPage(currentPageNum - 1);
-                        }
+                // أهم شرط: يجب أن تكون الحركة أفقية بوضوح (الفرق الأفقي أكبر بكثير من العمودي)
+                // هذا يسمح بالسكرول العمودي دون تفعيل قلب الصفحة
+                if (Math.abs(diffX) > Math.abs(diffY) + 30) { 
+                    if (Math.abs(diffX) > 50) { 
+                        if (diffX > 0) loadPage(currentPageNum + 1); // سحب لليسار = التالي
+                        else loadPage(currentPageNum - 1); // سحب لليمين = السابق
                     }
                 }
                 
@@ -193,145 +211,125 @@
             };
 
             const colors = darkMode ? 
-                { bg: '#000000', text: '#e0e0e0', headerBg: '#111', border: '#333', accent: '#fbbf24', secondary: '#1f2937' } : 
-                { bg: '#fdfbf7', text: '#000000', headerBg: '#fff', border: '#e5e5e5', accent: '#d97706', secondary: '#f3f4f6' };
+                { bg: '#000000', text: '#e0e0e0', headerBg: '#1f2937', border: '#333', accent: '#fbbf24' } : 
+                { bg: '#fdfbf7', text: '#000000', headerBg: '#ffffff', border: '#e5e5e5', accent: '#d97706' };
 
             const headerTitle = view === 'list' ? 'فهرس السور' : (pageData ? pageData.ayahs[0].surah.name : 'نور القرآن');
 
             if (view === 'loading') return (
-                <div style={{background: colors.bg, color: colors.text}} className="h-full w-full flex items-center justify-center font-ui text-xl font-bold">
-                    ...
-                </div>
+                <div style={{background: colors.bg, color: colors.text}} className="h-full w-full flex items-center justify-center text-xl font-bold">...</div>
             );
 
             return (
-                <div style={{background: colors.bg, color: colors.text}} className="h-full w-full flex flex-col font-ui overflow-hidden">
+                <div style={{background: colors.bg, color: colors.text}} className="h-full w-full relative">
                     
-                    {/* --- الزر العلوي الكبير (ثابت دائماً) --- */}
+                    {/* --- الشريط العلوي الثابت (Fixed Header) --- */}
                     <button 
                         onClick={() => setView('list')}
-                        style={{backgroundColor: colors.headerBg, borderBottom: `1px solid ${colors.border}`}} 
-                        className="flex items-center justify-center p-2 shrink-0 h-14 w-full relative z-50 active:opacity-60 transition-opacity"
+                        className="fixed-header active:opacity-60 transition-opacity"
+                        style={{backgroundColor: colors.headerBg, borderBottom: `1px solid ${colors.border}`, color: colors.text}} 
                     >
-                        <div className="font-bold text-lg truncate px-2 text-center w-full font-quran select-none pointer-events-none">
+                        <div className="font-bold text-lg truncate px-8 w-full text-center font-quran pointer-events-none">
                             {headerTitle}
                         </div>
-                        {view === 'reader' && (
-                            <div className="absolute left-4 opacity-50 pointer-events-none">
-                                <Icon d="M4 6h16M4 12h16M4 18h16" size={22} />
-                            </div>
-                        )}
-                        {view === 'list' && (
-                            <div className="absolute left-4 opacity-50 transform rotate-180 pointer-events-none">
-                                <Icon d="M19 12H5m7 7l-7-7 7-7" size={22} />
-                            </div>
-                        )}
+                        
+                        {/* أيقونات توضيحية */}
+                        <div className="absolute left-4 opacity-50 pointer-events-none">
+                            {view === 'reader' ? <Icon d="M4 6h16M4 12h16M4 18h16" size={22} /> : 
+                             <Icon d="M19 12H5m7 7l-7-7 7-7" size={22} />}
+                        </div>
                     </button>
 
-                    {/* --- المحتوى --- */}
-                    <div className="flex-1 w-full relative overflow-hidden">
-                        
-                        {/* 1. القائمة */}
-                        {view === 'list' && (
-                            <div className="h-full overflow-y-auto no-scrollbar pb-10 w-full">
+                    {/* --- المحتوى القابل للسكرول --- */}
+                    {/* 1. القائمة */}
+                    {view === 'list' && (
+                        <div className="scrollable-content round-watch-safe">
+                            <button 
+                                onClick={() => setView('settings')}
+                                className="w-full p-4 border-b font-bold flex justify-between items-center bg-gray-100/5 mb-2"
+                                style={{borderColor: colors.border, color: colors.text}}
+                            >
+                                <span className="flex items-center gap-2">
+                                    <Icon d="M12 15a3 3 0 100-6 3 3 0 000 6z" size={18} />
+                                    الإعدادات
+                                </span>
+                                <span>›</span>
+                            </button>
+
+                            {surahs.map(s => (
                                 <button 
-                                    onClick={() => setView('settings')}
-                                    className="w-full p-4 border-b font-bold flex justify-between items-center round-watch-safe bg-gray-100/5"
+                                    key={s.number}
+                                    onClick={() => goToSurah(s.number)}
+                                    className="w-full p-4 border-b active:bg-black/10 flex items-center text-right watch-list-item"
                                     style={{borderColor: colors.border, color: colors.text}}
                                 >
-                                    <span className="flex items-center gap-2">
-                                        <Icon d="M12 15a3 3 0 100-6 3 3 0 000 6z" size={18} />
-                                        الإعدادات
-                                    </span>
-                                    <span>›</span>
+                                    <div className="flex items-center gap-2 pointer-events-none">
+                                        <span className="font-bold font-quran text-xl">{toArabicNum(s.number)}.</span>
+                                        <span className="font-bold font-quran text-xl">{s.name}</span>
+                                    </div>
                                 </button>
+                            ))}
+                        </div>
+                    )}
 
-                                {surahs.map(s => (
-                                    <button 
-                                        key={s.number}
-                                        onClick={() => goToSurah(s.number)}
-                                        className="w-full p-4 border-b active:bg-black/10 flex items-center text-right round-watch-safe watch-list-item"
-                                        style={{borderColor: colors.border, color: colors.text}}
-                                    >
-                                        <div className="flex items-center gap-2 pointer-events-none">
-                                            <span className="font-bold font-quran text-xl">{toArabicNum(s.number)}.</span>
-                                            <span className="font-bold font-quran text-xl">{s.name}</span>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
+                    {/* 2. القارئ */}
+                    {view === 'reader' && pageData && (
+                        <div 
+                            id="scroll-container"
+                            className="scrollable-content round-watch-safe"
+                            onTouchStart={onTouchStart}
+                            onTouchEnd={onTouchEnd}
+                        >
+                            <div className="mushaf-page-content font-quran px-1" style={{fontSize: fontSize + 'px'}}>
+                                {pageData.ayahs.map((ayah, i) => {
+                                    const isSurahStart = ayah.numberInSurah === 1;
+                                    const showBismillah = isSurahStart && ayah.surah.number !== 1 && ayah.surah.number !== 9;
+                                    let text = ayah.text;
+                                    if (showBismillah) text = text.replace("بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", "").trim();
 
-                        {/* 2. القارئ (مع سكرول وسحب) */}
-                        {view === 'reader' && pageData && (
-                            <div 
-                                id="scroll-container"
-                                className="h-full w-full overflow-y-auto no-scrollbar"
-                                style={{touchAction: 'pan-y'}} /* هذا السطر هو الحل للسكرول */
-                                onTouchStart={onTouchStart}
-                                onTouchEnd={onTouchEnd}
-                            >
-                                <div className="px-3 pt-2 round-watch-safe min-h-full">
-                                    <div className="mushaf-page-content font-quran" style={{fontSize: fontSize + 'px'}}>
-                                        
-                                        {pageData.ayahs.map((ayah, i) => {
-                                            const isSurahStart = ayah.numberInSurah === 1;
-                                            const showBismillah = isSurahStart && ayah.surah.number !== 1 && ayah.surah.number !== 9;
-                                            let text = ayah.text;
-                                            if (showBismillah) text = text.replace("بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", "").trim();
-
-                                            return (
-                                                <span key={i}>
-                                                    {isSurahStart && (
-                                                        <div className="surah-frame">
-                                                            سورة {ayah.surah.name}
-                                                        </div>
-                                                    )}
-                                                    
-                                                    {showBismillah && (
-                                                        <div className="text-center w-full mb-2 opacity-80 text-sm">
-                                                            بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
-                                                        </div>
-                                                    )}
-
-                                                    <span>
-                                                        {text}
-                                                        <span className="ayah-marker select-none" style={{color: colors.accent}}>
-                                                            <span className="ayah-symbol">&#1757;</span>
-                                                            <span className="ayah-number">{toArabicNum(ayah.numberInSurah)}</span>
-                                                        </span>
-                                                    </span>
+                                    return (
+                                        <span key={i}>
+                                            {isSurahStart && (
+                                                <div className="surah-frame">سورة {ayah.surah.name}</div>
+                                            )}
+                                            {showBismillah && (
+                                                <div className="text-center w-full mb-2 opacity-80 text-sm">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>
+                                            )}
+                                            <span>
+                                                {text}
+                                                <span className="ayah-marker select-none" style={{color: colors.accent}}>
+                                                    <span className="ayah-symbol">&#1757;</span>
+                                                    <span className="ayah-number">{toArabicNum(ayah.numberInSurah)}</span>
                                                 </span>
-                                            );
-                                        })}
-                                    </div>
-
-                                    {/* رقم الصفحة */}
-                                    <div className="text-center text-xs opacity-50 py-6 font-ui border-t mt-4" style={{borderColor: colors.border}}>
-                                        صفحة {toArabicNum(currentPageNum)}
-                                    </div>
-                                </div>
+                                            </span>
+                                        </span>
+                                    );
+                                })}
                             </div>
-                        )}
 
-                        {/* 3. الإعدادات */}
-                        {view === 'settings' && (
-                            <div className="h-full w-full flex items-center justify-center p-4 bg-black/90 absolute inset-0 z-50">
-                                <div style={{background: colors.bg, borderColor: colors.border}} className="p-4 rounded-2xl w-full max-w-[280px] text-center border">
-                                    <h3 className="font-bold mb-4 font-ui">حجم الخط</h3>
-                                    <div className="flex justify-center gap-3 mb-6">
-                                        <button onClick={() => setFontSize(f => Math.max(16, f-2))} className="w-10 h-10 bg-gray-200 text-black rounded-lg font-bold text-xl">-</button>
-                                        <span className="text-xl font-quran flex items-center">{toArabicNum(fontSize)}</span>
-                                        <button onClick={() => setFontSize(f => Math.min(40, f+2))} className="w-10 h-10 bg-gray-200 text-black rounded-lg font-bold text-xl">+</button>
-                                    </div>
-                                    <button onClick={() => setDarkMode(!darkMode)} className="w-full py-3 mb-4 rounded-xl bg-gray-200 text-black font-bold font-ui">
-                                        {darkMode ? 'الوضع النهاري' : 'الوضع الليلي'}
-                                    </button>
-                                    <button onClick={() => setView('list')} className="text-red-500 font-bold p-2 w-full h-10">إغلاق</button>
-                                </div>
+                            <div className="text-center text-xs opacity-50 py-4 border-t mt-4 mb-8" style={{borderColor: colors.border}}>
+                                صفحة {toArabicNum(currentPageNum)}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
+
+                    {/* 3. الإعدادات */}
+                    {view === 'settings' && (
+                        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[200]">
+                            <div style={{background: colors.bg, borderColor: colors.border}} className="p-4 rounded-2xl w-full max-w-[280px] text-center border">
+                                <h3 className="font-bold mb-4">حجم الخط</h3>
+                                <div className="flex justify-center gap-3 mb-6">
+                                    <button onClick={() => setFontSize(f => Math.max(16, f-2))} className="w-10 h-10 bg-gray-200 text-black rounded-lg font-bold text-xl">-</button>
+                                    <span className="text-xl font-quran flex items-center">{toArabicNum(fontSize)}</span>
+                                    <button onClick={() => setFontSize(f => Math.min(40, f+2))} className="w-10 h-10 bg-gray-200 text-black rounded-lg font-bold text-xl">+</button>
+                                </div>
+                                <button onClick={() => setDarkMode(!darkMode)} className="w-full py-3 mb-4 rounded-xl bg-gray-200 text-black font-bold">
+                                    {darkMode ? 'الوضع النهاري' : 'الوضع الليلي'}
+                                </button>
+                                <button onClick={() => setView('list')} className="text-red-500 font-bold p-2 w-full h-10">إغلاق</button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
