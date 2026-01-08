@@ -2,340 +2,175 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>نور القرآن</title>
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#fdfbf7">
-    
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دعوة محضر خير - قابلة للتعديل</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;700&display=swap');
-        
-        * { box-sizing: border-box; }
-
-        body { 
-            background-color: #fdfbf7; 
-            margin: 0; 
-            padding: 0; 
-            user-select: none; 
-            -webkit-tap-highlight-color: transparent;
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden; /* يمنع تحرك الصفحة بالكامل */
+        body {
             font-family: 'Tajawal', sans-serif;
+            background-color: #f3f4f6;
+            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 20px 20px;
         }
-        
-        .font-quran { font-family: 'Amiri', serif; line-height: 2.4; }
-        
-        /* إخفاء شريط التمرير لكن السماح بالسكرول */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* منطقة القراءة القابلة للسكرول */
-        .scrollable-content {
-            height: 100%;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch; /* سكرول ناعم */
-            padding-top: 60px; /* مساحة للشريط العلوي الثابت */
-            padding-bottom: 40px;
+        .quote-font {
+            font-family: 'Amiri', serif;
         }
-
-        /* تحسينات الساعة */
-        @media (max-width: 450px) {
-            .round-watch-safe {
-                padding-left: 32px !important;
-                padding-right: 32px !important;
-            }
-            .watch-list-item {
-                justify-content: center !important;
-                text-align: center !important;
-            }
-            .hide-on-watch { display: none !important; }
+        .pure-black {
+            color: #000000 !important;
         }
-
-        /* الشريط العلوي الثابت */
-        .fixed-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 55px;
-            z-index: 100; /* فوق كل شيء */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        /* تنسيق الآية */
-        .ayah-marker {
+        .islamic-border {
+            border: 2px solid #104F36; /* Deep Green */
+            border-radius: 16px;
             position: relative;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 4px; 
-            vertical-align: middle;
-            height: 0.9em;
-            width: 0.9em;
         }
-        .ayah-symbol { font-size: 1em; line-height: 1; }
-        .ayah-number {
+        .islamic-border::after {
+            content: '';
             position: absolute;
-            font-size: 0.4em;
-            font-family: 'Tajawal', sans-serif;
-            top: 55%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-weight: bold;
+            top: 4px;
+            left: 4px;
+            right: 4px;
+            bottom: 4px;
+            border: 1px solid #C5A059; /* Gold */
+            border-radius: 12px;
+            pointer-events: none;
         }
-
-        .mushaf-page-content {
-            text-align: justify;
-            text-align-last: center;
+        img.qr-code {
+            mix-blend-mode: multiply;
         }
-
-        .surah-frame {
-            margin: 20px 0 10px 0;
-            padding: 8px;
-            border: 1px double currentColor;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: bold;
-            background-color: rgba(0,0,0,0.03);
+        /* Style for editable elements */
+        [contenteditable="true"] {
+            cursor: text;
+        }
+        [contenteditable="true"]:focus {
+            outline: 2px dashed #C5A059;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 4px;
+            padding: 0 4px;
+        }
+        /* Hide scrollbars during screenshot/print if content overflows slightly */
+        ::-webkit-scrollbar {
+            display: none;
         }
     </style>
 </head>
-<body>
-    <div id="root" class="h-full w-full"></div>
+<body class="min-h-screen flex items-center justify-center p-2">
 
-    <script type="text/babel">
-        const Icon = ({ d, size=20 }) => (
-            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
-        );
+    <!-- Card Container -->
+    <div class="bg-white w-full max-w-[400px] shadow-2xl overflow-hidden islamic-border relative">
+        
+        <!-- Decorative Top Header -->
+        <div class="bg-[#104F36] h-2 w-full"></div>
 
-        const toArabicNum = (n) => n.toString().replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
-
-        function App() {
-            const [surahs, setSurahs] = React.useState([]);
-            const [pageData, setPageData] = React.useState(null);
-            const [currentPageNum, setCurrentPageNum] = React.useState(1);
-            const [view, setView] = React.useState('loading'); 
-            const [fontSize, setFontSize] = React.useState(() => parseInt(localStorage.getItem('q_fs')) || 22);
-            const [darkMode, setDarkMode] = React.useState(() => localStorage.getItem('q_dm') === 'true');
+        <!-- Main Content -->
+        <div class="p-4 text-center space-y-3">
             
-            // متغيرات السحب
-            const touchStartX = React.useRef(null);
-            const touchStartY = React.useRef(null);
+            <!-- Basmalah & Quote Section -->
+            <div class="bg-[#f0fdf4] p-3 rounded-lg border border-[#dcfce7]">
+                <p contenteditable="true" class="quote-font text-lg leading-7 pure-black italic font-bold outline-none">
+                    «رُبَّ عملٍ صغيرٍ تُعظِّمُه النيّة، ورُبَّ عملٍ كبيرٍ تُصغِّرُه النيّة»
+                </p>
+                <p contenteditable="true" class="text-sm mt-1 text-[#104F36] font-bold outline-none">عبد الله بن المبارك - رحمه الله</p>
+            </div>
 
-            // التحميل الأولي
-            React.useEffect(() => {
-                const init = async () => {
-                    const savedPage = JSON.parse(localStorage.getItem('q_saved_page'));
-                    
-                    try {
-                        const res = await fetch('https://api.alquran.cloud/v1/surah');
-                        const data = await res.json();
-                        setSurahs(data.data);
-                    } catch(e) {}
-
-                    if (savedPage) loadPage(savedPage);
-                    else loadPage(1);
-                };
-                init();
-            }, []);
-
-            React.useEffect(() => { localStorage.setItem('q_fs', fontSize); }, [fontSize]);
-            React.useEffect(() => { localStorage.setItem('q_dm', darkMode); }, [darkMode]);
-
-            const loadPage = async (pageNum) => {
-                if (pageNum < 1 || pageNum > 604) return;
-                setView('loading');
-                try {
-                    const res = await fetch(`https://api.alquran.cloud/v1/page/${pageNum}/quran-uthmani`);
-                    const data = await res.json();
-                    setPageData(data.data);
-                    setCurrentPageNum(pageNum);
-                    setView('reader');
-                    localStorage.setItem('q_saved_page', JSON.stringify(pageNum));
-                    // إعادة السكرول للأعلى
-                    setTimeout(() => {
-                        const container = document.getElementById('scroll-container');
-                        if (container) container.scrollTop = 0;
-                    }, 50);
-                } catch (e) {
-                    setView('list'); 
-                }
-            };
-
-            const goToSurah = async (surahNumber) => {
-                setView('loading');
-                try {
-                    const res = await fetch(`https://api.alquran.cloud/v1/ayah/${surahNumber}:1`);
-                    const data = await res.json();
-                    loadPage(data.data.page);
-                } catch (e) {
-                    loadPage(1);
-                }
-            };
-
-            // --- منطق السحب المحسن ---
-            const onTouchStart = (e) => {
-                touchStartX.current = e.touches[0].clientX;
-                touchStartY.current = e.touches[0].clientY;
-            };
-
-            const onTouchEnd = (e) => {
-                if (!touchStartX.current || !touchStartY.current) return;
-
-                const touchEndX = e.changedTouches[0].clientX;
-                const touchEndY = e.changedTouches[0].clientY;
-
-                const diffX = touchStartX.current - touchEndX;
-                const diffY = touchStartY.current - touchEndY;
-
-                // أهم شرط: يجب أن تكون الحركة أفقية بوضوح (الفرق الأفقي أكبر بكثير من العمودي)
-                // هذا يسمح بالسكرول العمودي دون تفعيل قلب الصفحة
-                if (Math.abs(diffX) > Math.abs(diffY) + 30) { 
-                    if (Math.abs(diffX) > 50) { 
-                        if (diffX > 0) loadPage(currentPageNum + 1); // سحب لليسار = التالي
-                        else loadPage(currentPageNum - 1); // سحب لليمين = السابق
-                    }
-                }
+            <!-- Titles Section -->
+            <div class="space-y-1 py-1">
+                <p contenteditable="true" class="text-xs pure-black font-bold outline-none">أهلاً ومرحباً بكم في</p>
                 
-                touchStartX.current = null;
-                touchStartY.current = null;
-            };
+                <!-- Smaller Meeting Number -->
+                <h2 contenteditable="true" class="text-lg font-bold text-[#C5A059] outline-none">اللقاء الثامن</h2>
+                
+                <p contenteditable="true" class="text-xs pure-black font-bold outline-none">من برنامج</p>
+                
+                <!-- Larger Program Name -->
+                <h1 contenteditable="true" class="text-3xl font-black pure-black bg-gray-100 inline-block px-6 py-2 rounded-xl border border-gray-200 shadow-sm mt-1 outline-none">مَحضِر خير</h1>
+            </div>
 
-            const colors = darkMode ? 
-                { bg: '#000000', text: '#e0e0e0', headerBg: '#1f2937', border: '#333', accent: '#fbbf24' } : 
-                { bg: '#fdfbf7', text: '#000000', headerBg: '#ffffff', border: '#e5e5e5', accent: '#d97706' };
+            <!-- Speaker Section -->
+            <div class="py-1">
+                <p contenteditable="true" class="text-sm pure-black outline-none">مع الدكتورة</p>
+                <h3 contenteditable="true" class="text-xl font-bold text-[#104F36] outline-none">وداد سماوي</h3>
+                <p contenteditable="true" class="text-xs pure-black outline-none">(دكتوراه في دراسات القرآن والسنة)</p>
+            </div>
 
-            const headerTitle = view === 'list' ? 'فهرس السور' : (pageData ? pageData.ayahs[0].surah.name : 'نور القرآن');
+            <!-- Description -->
+            <div>
+                <p contenteditable="true" class="text-xs pure-black leading-relaxed font-bold px-1 outline-none">
+                    برنامج يجمع بين الإيمان والتربية والتزكية وصناعة الأثر.<br>
+                    حيث كل لقاء يُثمر قلبًا واعيًا، وعملًا راقيًا. 💚
+                </p>
+            </div>
 
-            if (view === 'loading') return (
-                <div style={{background: colors.bg, color: colors.text}} className="h-full w-full flex items-center justify-center text-xl font-bold">...</div>
-            );
+            <!-- Divider -->
+            <div class="flex items-center justify-center opacity-50 my-1">
+                <div class="h-px bg-[#000000] w-12"></div>
+                <div class="mx-2 text-[#C5A059] text-xs">✦</div>
+                <div class="h-px bg-[#000000] w-12"></div>
+            </div>
 
-            return (
-                <div style={{background: colors.bg, color: colors.text}} className="h-full w-full relative">
-                    
-                    {/* --- الشريط العلوي الثابت (Fixed Header) --- */}
-                    <button 
-                        onClick={() => setView('list')}
-                        className="fixed-header active:opacity-60 transition-opacity"
-                        style={{backgroundColor: colors.headerBg, borderBottom: `1px solid ${colors.border}`, color: colors.text}} 
-                    >
-                        <div className="font-bold text-lg truncate px-8 w-full text-center font-quran pointer-events-none">
-                            {headerTitle}
-                        </div>
-                        
-                        {/* أيقونات توضيحية */}
-                        <div className="absolute left-4 opacity-50 pointer-events-none">
-                            {view === 'reader' ? <Icon d="M4 6h16M4 12h16M4 18h16" size={22} /> : 
-                             <Icon d="M19 12H5m7 7l-7-7 7-7" size={22} />}
-                        </div>
-                    </button>
-
-                    {/* --- المحتوى القابل للسكرول --- */}
-                    {/* 1. القائمة */}
-                    {view === 'list' && (
-                        <div className="scrollable-content round-watch-safe">
-                            <button 
-                                onClick={() => setView('settings')}
-                                className="w-full p-4 border-b font-bold flex justify-between items-center bg-gray-100/5 mb-2"
-                                style={{borderColor: colors.border, color: colors.text}}
-                            >
-                                <span className="flex items-center gap-2">
-                                    <Icon d="M12 15a3 3 0 100-6 3 3 0 000 6z" size={18} />
-                                    الإعدادات
-                                </span>
-                                <span>›</span>
-                            </button>
-
-                            {surahs.map(s => (
-                                <button 
-                                    key={s.number}
-                                    onClick={() => goToSurah(s.number)}
-                                    className="w-full p-4 border-b active:bg-black/10 flex items-center text-right watch-list-item"
-                                    style={{borderColor: colors.border, color: colors.text}}
-                                >
-                                    <div className="flex items-center gap-2 pointer-events-none">
-                                        <span className="font-bold font-quran text-xl">{toArabicNum(s.number)}.</span>
-                                        <span className="font-bold font-quran text-xl">{s.name}</span>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* 2. القارئ */}
-                    {view === 'reader' && pageData && (
-                        <div 
-                            id="scroll-container"
-                            className="scrollable-content round-watch-safe"
-                            onTouchStart={onTouchStart}
-                            onTouchEnd={onTouchEnd}
-                        >
-                            <div className="mushaf-page-content font-quran px-1" style={{fontSize: fontSize + 'px'}}>
-                                {pageData.ayahs.map((ayah, i) => {
-                                    const isSurahStart = ayah.numberInSurah === 1;
-                                    const showBismillah = isSurahStart && ayah.surah.number !== 1 && ayah.surah.number !== 9;
-                                    let text = ayah.text;
-                                    if (showBismillah) text = text.replace("بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", "").trim();
-
-                                    return (
-                                        <span key={i}>
-                                            {isSurahStart && (
-                                                <div className="surah-frame">سورة {ayah.surah.name}</div>
-                                            )}
-                                            {showBismillah && (
-                                                <div className="text-center w-full mb-2 opacity-80 text-sm">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>
-                                            )}
-                                            <span>
-                                                {text}
-                                                <span className="ayah-marker select-none" style={{color: colors.accent}}>
-                                                    <span className="ayah-symbol">&#1757;</span>
-                                                    <span className="ayah-number">{toArabicNum(ayah.numberInSurah)}</span>
-                                                </span>
-                                            </span>
-                                        </span>
-                                    );
-                                })}
-                            </div>
-
-                            <div className="text-center text-xs opacity-50 py-4 border-t mt-4 mb-8" style={{borderColor: colors.border}}>
-                                صفحة {toArabicNum(currentPageNum)}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* 3. الإعدادات */}
-                    {view === 'settings' && (
-                        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[200]">
-                            <div style={{background: colors.bg, borderColor: colors.border}} className="p-4 rounded-2xl w-full max-w-[280px] text-center border">
-                                <h3 className="font-bold mb-4">حجم الخط</h3>
-                                <div className="flex justify-center gap-3 mb-6">
-                                    <button onClick={() => setFontSize(f => Math.max(16, f-2))} className="w-10 h-10 bg-gray-200 text-black rounded-lg font-bold text-xl">-</button>
-                                    <span className="text-xl font-quran flex items-center">{toArabicNum(fontSize)}</span>
-                                    <button onClick={() => setFontSize(f => Math.min(40, f+2))} className="w-10 h-10 bg-gray-200 text-black rounded-lg font-bold text-xl">+</button>
-                                </div>
-                                <button onClick={() => setDarkMode(!darkMode)} className="w-full py-3 mb-4 rounded-xl bg-gray-200 text-black font-bold">
-                                    {darkMode ? 'الوضع النهاري' : 'الوضع الليلي'}
-                                </button>
-                                <button onClick={() => setView('list')} className="text-red-500 font-bold p-2 w-full h-10">إغلاق</button>
-                            </div>
-                        </div>
-                    )}
+            <!-- Date & Time -->
+            <div class="space-y-0.5">
+                <div class="flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#104F36]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span contenteditable="true" class="text-base font-bold pure-black outline-none">السبت ١٠ يناير ٢٠٢٦</span>
                 </div>
-            );
-        }
+                <div class="flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#104F36]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span contenteditable="true" class="text-sm font-bold pure-black outline-none">١١:٠٠ صباحاً بتوقيت مكة المكرمة</span>
+                </div>
+                <p contenteditable="true" class="text-[10px] font-bold text-red-600 outline-none">(عبر تطبيق Zoom)</p>
+            </div>
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+            <!-- QR Codes Section -->
+            <div class="pt-1">
+                <p contenteditable="true" class="text-xs pure-black font-bold mb-2 outline-none">امسح الرمز للانضمام:</p>
+                <div class="flex justify-center gap-4">
+                    <!-- WhatsApp -->
+                    <div class="flex flex-col items-center group">
+                        <div class="bg-white p-1 border border-black rounded-lg">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://chat.whatsapp.com/Bkygv8eqtP3CZdaMU3vrvL?mode=wwt" 
+                                 alt="WhatsApp QR" 
+                                 class="w-20 h-20 qr-code">
+                        </div>
+                        <div class="flex items-center gap-1 mt-1">
+                            <span contenteditable="true" class="text-[10px] font-bold pure-black outline-none">واتساب</span>
+                            <svg class="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                        </div>
+                    </div>
+
+                    <!-- Telegram -->
+                    <div class="flex flex-col items-center group">
+                        <div class="bg-white p-1 border border-black rounded-lg">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://t.me/+QUqfMikT2UI2YWQ8" 
+                                 alt="Telegram QR" 
+                                 class="w-20 h-20 qr-code">
+                        </div>
+                        <div class="flex items-center gap-1 mt-1">
+                            <span contenteditable="true" class="text-[10px] font-bold pure-black outline-none">تيليجرام</span>
+                            <svg class="w-3 h-3 text-blue-500" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 11.944 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="pt-0">
+                 <p contenteditable="true" class="text-[10px] text-[#104F36] font-medium outline-none">بانتظاركم في محضر خير</p>
+            </div>
+            
+        </div>
+        
+        <!-- Decorative Bottom Header -->
+        <div class="bg-[#104F36] h-2 w-full"></div>
+    </div>
+
 </body>
 </html>
+
+
